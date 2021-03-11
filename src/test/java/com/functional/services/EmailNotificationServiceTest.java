@@ -50,31 +50,42 @@ class EmailNotificationServiceTest {
   }
 
   @Test
-  void sendReturnsError() throws NoSuchFieldException, IllegalAccessException {
+  void sendReturnsError() throws ReflectiveOperationException {
 
-    // allow EmailService.send field to be changed
-    Field send = EmailNotificationService.class.getDeclaredField("sendMail");
-    send.setAccessible(true);
-
-    // remove final modifier for this Field
-    Field modifiers = Field.class.getDeclaredField("modifiers");
-    modifiers.setAccessible(true);
-    modifiers.setInt(send, send.getModifiers() & ~Modifier.FINAL);
 
     // Set Mock value
     Function<Employee, Try<Employee>> sendMock =
-        employee -> {
-          return Try.of(
-              () -> {
-                System.out.println("Mock Sending Email for employee: " + employee.getEmail());
-                throw new RuntimeException("Test error");
-              });
-        };
-    // Field is static, therefore first arg is null
-    send.set(null, sendMock);
+            employee -> {
+              return Try.of(
+                      () -> {
+                        System.out.println("Mock Sending Email for employee: " + employee.getEmail());
+                        throw new RuntimeException("Test error");
+                      });
+            };
+
+    // Mock value for EmailService.sendMail
+    setFinalStaticField(EmailNotificationService.class, "sendMail", sendMock);
+
 
     assertThat(
         this.emailNotificationService.send(this.employee).getLeft(),
         is("No able to send mail for employee: " + this.employee));
+  }
+
+
+  private static void setFinalStaticField(Class<?> clazz, String fieldName, Object value)
+          throws ReflectiveOperationException {
+
+    // allow EmailService.send field to be changed
+    Field field = clazz.getDeclaredField(fieldName);
+    field.setAccessible(true);
+
+    Field modifiers = Field.class.getDeclaredField("modifiers");
+    modifiers.setAccessible(true);
+    // remove final modifier for this Field
+    modifiers.setInt(field, field.getModifiers() & ~Modifier.FINAL);
+
+    // Field is static, therefore first arg is null
+    field.set(null, value);
   }
 }

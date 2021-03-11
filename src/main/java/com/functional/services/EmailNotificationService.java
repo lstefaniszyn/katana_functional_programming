@@ -11,7 +11,7 @@ import java.util.function.Function;
 @Service
 public final class EmailNotificationService implements NotificationService {
 
-  private static final Function<Employee, Try<Employee>> sendMail =
+  private static final Function<Employee, Try<Employee>>  sendMail =
       employee ->
           Try.of(
               () -> {
